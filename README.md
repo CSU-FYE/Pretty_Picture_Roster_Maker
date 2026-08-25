@@ -32,16 +32,17 @@ It works with the wifi off. That's a reasonable way to convince yourself.
 
 ## Using it
 
-1. Download the class list from your student information system as **.xlsx**, with
-   photos included.
-2. Open `picture-roster-maker.html` (double-click — it opens in your default browser).
-3. Drag the spreadsheet onto the page.
+1. **Open your class list in AriesWeb** and go to the roster for your section.
+2. **Download the Excel file _with photos_.** The download choice that includes
+   photos is the one you need — without them there is nothing to build a picture
+   roster from.
+3. **Load that file into the tool** — click the button or drag the file onto the page.
 4. Adjust the title, cards per row, name format, and sort order to taste.
-5. **Print / Save as PDF**, or **Download study sheet (.html)** to keep a
-   self-contained copy you can reopen offline.
+5. **Print / Save as PDF.**
 
-The saved sheet has *Toggle names* and *Toggle majors* buttons — hide one and quiz
-yourself on the other.
+These same three steps are shown on the tool's first screen.
+
+To make a quiz sheet, untick *Show major* before printing, and cover the names.
 
 ### What the spreadsheet needs
 
@@ -72,7 +73,6 @@ Students without a photo get a grey tile with their initials rather than being d
 | Name format | First + last initial, first and last, first only, or `Last, First` |
 | Order | Roster order, last name, first name, or by major |
 | Show major / pronouns | Pronouns only offered when the file has them |
-| Shrink photos | Roughly halves the saved file size; slower, off by default |
 
 ## Requirements
 

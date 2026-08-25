@@ -15,6 +15,13 @@
           background:#e9f1ea; color:var(--accent); border:1px solid #cfe0d3; }
   .app-card { max-width:1100px; margin:0 auto 16px; background:#fff; border:1px solid var(--line);
               border-radius:10px; padding:16px; }
+  #dropWrap { max-width:1100px; margin:0 auto 16px; }
+  .steps { margin:0 0 14px; padding:16px 20px 16px 44px; background:#fff; border:1px solid var(--line);
+           border-radius:10px; font-size:13.5px; line-height:1.5; }
+  .steps li { margin:0 0 9px; padding-left:4px; }
+  .steps li:last-child { margin-bottom:0; }
+  .steps li::marker { color:var(--accent); font-weight:700; }
+  .steps em { font-style:normal; background:#eef4ef; padding:0 4px; border-radius:3px; }
   #drop { border:2px dashed #c9d6cc; border-radius:10px; padding:30px 20px; text-align:center; background:#fff; }
   #drop.over { border-color:var(--accent); background:#f2f8f3; }
   #drop p { margin:8px 0 0; font-size:13px; color:var(--muted); }
@@ -54,9 +61,18 @@
   <div class="pill">Runs entirely in your browser &middot; the file is never uploaded anywhere</div>
 </div>
 
-<div id="dropWrap" class="app-card" style="padding:0; border:none; background:none;">
+<div id="dropWrap">
+  <ol class="steps">
+    <li><strong>Open your class list in AriesWeb.</strong>
+        Sign in and go to the roster for the section you want.</li>
+    <li><strong>Download the Excel file <em>with photos</em>.</strong>
+        The download choice that includes photos is the one you need &mdash; without
+        them there is nothing to build a picture roster from.</li>
+    <li><strong>Load that file below.</strong>
+        Your sheet appears right away, ready to print.</li>
+  </ol>
   <div id="drop">
-    <button class="btn primary" id="pick">Choose a class list (.xlsx)</button>
+    <button class="btn primary" id="pick">Choose your class list (.xlsx)</button>
     <input type="file" id="file" accept=".xlsx" class="hidden">
     <p>&hellip; or drag the file here. Works offline &mdash; nothing leaves this computer.</p>
   </div>
@@ -96,11 +112,9 @@
   <div class="checks">
     <label><input type="checkbox" id="showMajor" checked> Show major</label>
     <label><input type="checkbox" id="showPronouns"> Show pronouns</label>
-    <label><input type="checkbox" id="optimize"> Shrink photos (smaller saved file)</label>
   </div>
   <div class="actions">
     <button class="btn primary" id="print">Print / Save as PDF</button>
-    <button class="btn" id="download">Download study sheet (.html)</button>
     <button class="btn" id="reset">Load a different file</button>
   </div>
 </div>
@@ -126,9 +140,6 @@ const SHEET_CSS = `
                 align-items:baseline; gap:16px; flex-wrap:wrap; }
   .sheet-head h1 { font-size:20px; margin:0; color:var(--accent); }
   .sheet-head .meta { font-size:13px; color:var(--muted); }
-  .sheet .toolbar { max-width:1100px; margin:0 auto 14px; font-size:12px; color:var(--muted); }
-  .sheet .toolbar button { font:inherit; font-size:12px; padding:4px 10px; border:1px solid var(--line);
-                           background:#fff; border-radius:6px; cursor:pointer; margin-right:6px; }
   .sheet .grid { max-width:1100px; margin:0 auto; display:grid;
                  grid-template-columns:repeat(var(--cols), 1fr); gap:14px; }
   .sheet .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px;
@@ -140,10 +151,7 @@ const SHEET_CSS = `
   .sheet .name { font-weight:700; font-size:15px; margin-top:8px; line-height:1.2; }
   .sheet .major { font-size:11px; color:var(--muted); margin-top:3px; line-height:1.25; }
   .sheet .pronouns { font-size:10px; color:var(--muted); margin-top:2px; line-height:1.2; font-style:italic; }
-  .sheet.hide-major .major, .sheet.hide-major .pronouns { visibility:hidden; }
-  .sheet.hide-name .name { visibility:hidden; }
   @media print {
-    .sheet .toolbar { display:none; }
     .sheet-head { margin:0 0 10px; padding:8px 12px 0; }
     .sheet .grid { gap:8px; padding:0 12px; }
     .sheet .card { border:1px solid #ccc; padding:6px; }
@@ -421,7 +429,7 @@ function formatName(n, style) {
 }
 
 /* ---------- state ---------- */
-const state = { students: [], title: '', slug: 'class', urls: [], fileName: '' };
+const state = { students: [], title: '', urls: [], fileName: '' };
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
@@ -497,7 +505,6 @@ async function loadFile(file) {
 
     state.students = students;
     state.title = prettyTitle(sheetName || file.name.replace(/\.xlsx$/i, ''));
-    state.slug = state.title.replace(/[^\w.-]+/g, '');
     $('title').value = state.title;
     if (!students.some(s => s.major)) $('showMajor').checked = false;
     $('showPronouns').disabled = !students.some(s => s.pronouns);
@@ -595,112 +602,6 @@ function render() {
     '<div class="grid">\n' + cardsHTML(list, opts, srcOf) + '\n</div>';
 }
 
-/* ---------- export: one self-contained .html file ---------- */
-function bytesToBase64(bytes) {
-  let bin = '';
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
-  }
-  return btoa(bin);
-}
-
-async function shrink(photo) {
-  try {
-    const bitmap = await createImageBitmap(new Blob([photo.bytes], { type: photo.mime }));
-    const maxH = 480;
-    const scale = Math.min(1, maxH / bitmap.height);
-    const w = Math.max(1, Math.round(bitmap.width * scale));
-    const h = Math.max(1, Math.round(bitmap.height * scale));
-    const canvas = ('OffscreenCanvas' in window) ? new OffscreenCanvas(w, h)
-                                                 : Object.assign(document.createElement('canvas'), { width: w, height: h });
-    canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
-    bitmap.close && bitmap.close();
-    const blob = canvas.convertToBlob
-      ? await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.82 })
-      : await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.82));
-    if (!blob) return photo;
-    const bytes = new Uint8Array(await blob.arrayBuffer());
-    return bytes.length < photo.bytes.length ? { bytes, mime: 'image/jpeg' } : photo;
-  } catch (e) {
-    return photo;   // any trouble: keep the original image
-  }
-}
-
-async function mapWithProgress(items, fn, onProgress, concurrency) {
-  const out = new Array(items.length);
-  let next = 0, done = 0;
-  async function worker() {
-    while (next < items.length) {
-      const i = next++;
-      out[i] = await fn(items[i]);
-      onProgress(++done, items.length);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) || 1 }, worker));
-  return out;
-}
-
-async function buildExportHTML(onProgress) {
-  const opts = currentOptions();
-  const list = sortedStudents(opts);
-  const useShrink = $('optimize').checked;
-  const report = onProgress || function () {};
-  const dataURIs = new Map();
-  const withPhoto = list.filter(s => s.photo);
-  const uris = await mapWithProgress(withPhoto, async s => {
-    const p = useShrink ? await shrink(s.photo) : s.photo;
-    return 'data:' + p.mime + ';base64,' + bytesToBase64(p.bytes);
-  }, report, useShrink ? 4 : 1);
-  withPhoto.forEach((s, i) => dataURIs.set(s, uris[i]));
-  const body =
-    '<div class="sheet" style="--cols:' + esc(opts.cols) + '">\n' +
-    '<div class="sheet-head">\n  <h1>' + esc(opts.title) + ' &middot; Student Name Study Sheet</h1>\n' +
-    '  <div class="meta">' + metaLine(list.length, opts) + '</div>\n</div>\n' +
-    '<div class="toolbar">\n' +
-    '  <button onclick="document.querySelector(\'.sheet\').classList.toggle(\'hide-major\')">Toggle majors</button>' +
-    '<button onclick="document.querySelector(\'.sheet\').classList.toggle(\'hide-name\')">Toggle names</button>\n' +
-    '  &nbsp; Tip: hide the names or the majors to quiz yourself, then Ctrl/Cmd+P to print.\n</div>\n' +
-    '<div class="grid">\n' + cardsHTML(list, opts, s => dataURIs.get(s) || null) + '\n</div>\n</div>';
-
-  return '<!DOCTYPE html>\n<html lang="en"><head><meta charset="utf-8">\n' +
-    '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
-    '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data:; ' +
-    'style-src \'unsafe-inline\'; script-src \'unsafe-inline\'">\n' +
-    '<title>' + esc(opts.title) + ' — Name Study Sheet</title>\n<style>\n' +
-    '  body { font-family:Arial, Helvetica, sans-serif; margin:0; padding:24px; background:#f5f5f5; }\n' +
-    '  @media print { body { background:#fff; padding:0; } }\n' +
-    SHEET_CSS + '</style></head>\n<body>\n' + body + '\n</body></html>\n';
-}
-
-async function downloadSheet() {
-  const btn = $('download');
-  const label = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = 'Building file…';
-  try {
-    const html = await buildExportHTML((done, total) => {
-      btn.textContent = 'Building file… ' + done + '/' + total;
-    });
-    const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = (state.slug || 'class') + '_name_study_sheet.html';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-    setStatus('Saved <strong>' + esc(a.download) + '</strong> to your Downloads folder &middot; ' +
-      esc(state.students.length) + ' students &middot; open it any time, no internet needed.');
-  } catch (err) {
-    console.error(err);
-    setStatus('<span class="err">Could not build the file: ' + esc(err.message) + '</span>');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = label;
-  }
-}
-
 /* ---------- wiring ---------- */
 $('pick').addEventListener('click', () => $('file').click());
 $('file').addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
@@ -722,7 +623,6 @@ drop.addEventListener('drop', e => {
   $(id).addEventListener('change', render);
 });
 $('print').addEventListener('click', () => window.print());
-$('download').addEventListener('click', downloadSheet);
 $('reset').addEventListener('click', () => {
   forgetLoadedFile();
   $('preview').innerHTML = '';
