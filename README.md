@@ -3,9 +3,17 @@
 Turn a class list spreadsheet into a printable name-study sheet — photo, first name
 and last initial, major — so you can learn your students' names in the first week.
 
-**One file. No install, no server, no internet.** Download
-[`picture-roster-maker.html`](picture-roster-maker.html), double-click it, drop in
-your class list, print.
+**One file. No install, no server, no internet.**
+
+- **Use it now:** <https://csu-fye.github.io/Pretty_Picture_Roster_Maker/>
+- **Or keep your own copy:** download
+  [`picture-roster-maker.html`](picture-roster-maker.html), double-click it, and it
+  runs from your Desktop — no internet required. (From the hosted version:
+  right-click → *Save Page As*.)
+
+Either way the work happens in your browser. The hosted copy is just a convenient
+way to get the file; a saved copy works with the wifi switched off, which is the
+easiest way to satisfy yourself that nothing is being uploaded.
 
 ## Student data never leaves your computer
 
