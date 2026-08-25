@@ -1,0 +1,9 @@
+# Never commit student data. Class lists and generated study sheets contain
+# names, photos, IDs and emails — keep them out of git entirely.
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+*_name_study_sheet.html
+ClassList*
+.DS_Store
